@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>五目並べ</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* 全体のスタイル */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #3f51b5;
+            margin-bottom: 20px;
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(10, 50px);
+            grid-gap: 5px;
+            margin-bottom: 20px;
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        .cell:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .cell.taken {
+            cursor: not-allowed;
+        }
+
+        #status {
+            font-size: 1.2rem;
+            color: #333;
+        }
+
+        button {
+            background-color: #3f51b5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #303f9f;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(2px);
+        }
+    </style>
+</head>
+<body>
+    <h1>五目並べ</h1>
+    <div id="board"></div>
+    <p id="status"></p>
+    <button id="reset">リセット</button>
+
+    <script>
+        $(function () {
+            const size = 10; // ボードサイズ
+            const board = [];
+            let gameOver = false;
+
+            // ボード初期化
+            function initBoard() {
+                $('#board').empty();
+                for (let i = 0; i < size; i++) {
+                    board[i] = Array(size).fill('');
+                    for (let j = 0; j < size; j++) {
+                        $('#board').append(`<div class="cell" data-row="${i}" data-col="${j}"></div>`);
+                    }
+                }
+                $('#status').text('');
+                gameOver = false;
+
+                // セルクリックイベント
+                $('.cell').on('click', function () {
+                    if (gameOver) return;
+
+                    const row = $(this).data('row');
+                    const col = $(this).data('col');
+
+                    if (board[row][col] === '') {
+                        board[row][col] = '○';
+                        $(this).text('○').addClass('taken');
+
+                        if (checkWin(row, col, '○')) {
+                            $('#status').text('プレイヤー（○）の勝利！');
+                            gameOver = true;
+                            return;
+                        }
+
+                        computerTurn(); // コンピュータのターン
+                    }
+                });
+            }
+
+            // コンピュータのターン
+            function computerTurn() {
+                if (gameOver) return;
+
+                const emptyCells = [];
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        if (board[i][j] === '') emptyCells.push({ row: i, col: j });
+                    }
+                }
+
+                // 空いているセルからランダムに選択
+                if (emptyCells.length > 0) {
+                    const move = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+                    board[move.row][move.col] = '×';
+                    $(`.cell[data-row='${move.row}'][data-col='${move.col}']`).text('×').addClass('taken');
+
+                    if (checkWin(move.row, move.col, '×')) {
+                        $('#status').text('コンピュータ（×）の勝利！');
+                        gameOver = true;
+                    }
+                }
+            }
+
+            // 勝利判定
+            function checkWin(row, col, player) {
+                const directions = [
+                    [[-1, 0], [1, 0]], // 縦
+                    [[0, -1], [0, 1]], // 横
+                    [[-1, -1], [1, 1]], // 左上-右下の斜め
+                    [[-1, 1], [1, -1]] // 左下-右上の斜め
+                ];
+
+                for (const direction of directions) {
+                    let count = 1;
+
+                    for (const [dx, dy] of direction) {
+                        let x = row + dx,
+                            y = col + dy;
+
+                        while (
+                            x >= 0 &&
+                            y >= 0 &&
+                            x < size &&
+                            y < size &&
+                            board[x][y] === player
+                        ) {
+                            count++;
+                            x += dx;
+                            y += dy;
+                        }
+                    }
+
+                    if (count >= 5) return true; // 五目揃った場合
+                }
+                return false;
+            }
+
+            // リセットボタン処理
+            $('#reset').on('click', initBoard);
+
+            initBoard(); // 初期化処理
+        });
+    </script>
+</body>
+</html>
